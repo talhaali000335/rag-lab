@@ -67,7 +67,7 @@ if not DEBUG:
 RAG_API_KEY = os.environ.get("RAG_API_KEY", "")
 RATE_LIMIT_PER_MIN = int(os.environ.get("RATE_LIMIT_PER_MIN", "30"))
 USE_LLM = os.environ.get("USE_LLM", "0") == "1"
-LLM_MODEL = os.environ.get("LLM_MODEL", "claude-sonnet-5-5")
+LLM_MODEL = os.environ.get("LLM_MODEL", "openai/gpt-oss-120b")
 MAX_QUESTION_CHARS = 500
 
 LOGGING = {

@@ -133,7 +133,7 @@ aws ecs create-service --cluster rag-lab --service-name rag-lab-svc --task-defin
 <tr><td>BM25 search</td><td>Embeddings stored in PostgreSQL with <code>pgvector</code> (same <code>search()</code> signature), combined with BM25 for hybrid search</td></tr>
 <tr><td>Heuristic re-ranker</td><td>A cross-encoder re-ranker model</td></tr>
 <tr><td>Image and audio captions</td><td>Image embeddings (CLIP/SigLIP) and speech-to-text (Whisper or Amazon Transcribe)</td></tr>
-<tr><td>Extracted sentences</td><td>An LLM: set <code>USE_LLM=1</code> and <code>ANTHROPIC_API_KEY</code>; the output guard still checks it</td></tr>
+<tr><td>Extracted sentences</td><td>An LLM: set <code>USE_LLM=1</code> and <code>GROQ_API_KEY</code>; the output guard still checks it</td></tr>
 <tr><td>Hard-coded graph</td><td>Entities and relations extracted from your documents, stored in Postgres or Neptune</td></tr>
 <tr><td>Rule-based router/planner</td><td>An LLM that returns a route or a plan as JSON</td></tr></tbody></table></div>
 <p>Load your own documents: split into 200 to 400 word chunks, keep the title and an <code>acl</code> label on each chunk, and replace the lists in <code>rag/kb.py</code> with a database table.</p>
