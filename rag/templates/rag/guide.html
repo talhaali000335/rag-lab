@@ -1,0 +1,144 @@
+{% verbatim %}<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>RAG Lab · Beginner guide</title>
+<style>
+:root{--bg:#f2f4f8;--card:#fff;--ink:#101a2c;--mut:#59657a;--line:#d9dfe9;--acc:#2447d6;--accbg:#e6ebfc;--ok:#12724a;--okbg:#dcf3e7;--warn:#9a5b00;--warnbg:#fdeccf;--code:#0f1a30;--codeink:#dbe6ff;--onacc:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1422;--card:#151e30;--ink:#e8edf7;--mut:#9aa8c0;--line:#27344d;--acc:#8ea6ff;--accbg:#1d2a52;--ok:#6fdba5;--okbg:#12362a;--warn:#f5b85a;--warnbg:#3b2a0c;--code:#0a101c;--onacc:#0d1422}}
+html{scroll-padding-top:64px;height:100%}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif}
+.app{max-width:820px;margin:0 auto;padding:18px 14px 60px}
+h1{font:700 32px/1.15 Charter,"Iowan Old Style",Georgia,serif;margin:0 0 6px}h2{font:700 24px/1.2 Charter,Georgia,serif;margin:34px 0 8px}h3{font-size:16px;margin:18px 0 4px}
+.mut{color:var(--mut)}p{margin:8px 0;max-width:68ch}a{color:var(--acc)}
+nav{display:flex;gap:6px;overflow-x:auto;padding:8px 0;position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);margin-bottom:10px;z-index:2}
+nav a{flex:0 0 auto;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:6px 11px;font-size:14px;font-weight:600;text-decoration:none}
+nav a:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:10px 0}
+.step{display:flex;gap:12px;margin:18px 0 4px}.num{flex:0 0 30px;height:30px;border-radius:50%;background:var(--acc);color:var(--onacc);font-weight:700;display:grid;place-items:center}.step h3{margin:3px 0 0;font-size:18px}
+pre{background:var(--code);color:var(--codeink);border-radius:8px;padding:12px 14px;overflow-x:auto;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;margin:8px 0}
+code{font:13px ui-monospace,Menlo,Consolas,monospace;background:var(--accbg);color:var(--acc);padding:1px 6px;border-radius:5px}pre code{background:none;color:inherit;padding:0}
+.tip,.warn{border-radius:8px;padding:9px 12px;margin:10px 0;font-size:14px}.tip{background:var(--okbg);color:var(--ok)}.warn{background:var(--warnbg);color:var(--warn)}
+.wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:7px 8px;border-top:1px solid var(--line);vertical-align:top}th{color:var(--mut);font-weight:600;border-top:0}
+</style></head><body><div class="app">
+<h1>RAG Lab: beginner guide</h1><p class="mut">From zero to a guarded, tested, deployed RAG app. Follow the steps in order. Every file named here is in the project folder.</p>
+<nav aria-label="Sections"><a href="#what">What is RAG</a><a href="#types">Six types</a><a href="#run">Run it</a><a href="#tour">Project tour</a><a href="#graph">LangGraph</a><a href="#safe">Guardrails</a><a href="#mlops">MLOps</a><a href="#aws">AWS</a><a href="#real">Real models</a><a href="#fix">Troubleshooting</a></nav>
+
+<h2 id="what">1. What is RAG?</h2>
+<p>A language model only knows what it was trained on. <b>Retrieval-augmented generation</b> fixes that: before answering, the app <i>retrieves</i> relevant passages from your own documents, then <i>generates</i> an answer using only those passages. Better answers, fresh data, and a source you can point to.</p>
+<div class="card"><b>The basic loop:</b> question → retrieve passages → generate answer from passages → check the answer is supported. The six architectures below change what happens in between.</div>
+
+<h2 id="types">2. The six architectures</h2>
+<div class="wrap"><table><thead><tr><th>Type</th><th>Use it when</th><th>Screen</th></tr></thead><tbody>
+<tr><td><b>Multimodal</b></td><td>Answers live in images, audio or text</td><td>/lab/multimodal/</td></tr>
+<tr><td><b>Advanced</b></td><td>Plain search returns noisy results: add rewrite, re-rank, filter</td><td>/lab/advanced/</td></tr>
+<tr><td><b>Adaptive</b></td><td>Questions vary: skip retrieval, retrieve once, or break apart</td><td>/lab/adaptive/</td></tr>
+<tr><td><b>Corrective (CRAG)</b></td><td>Your documents have gaps: grade results, fall back to the web</td><td>/lab/corrective/</td></tr>
+<tr><td><b>Graph</b></td><td>Answers need relationships between things (multi-hop)</td><td>/lab/graph/</td></tr>
+<tr><td><b>Agentic</b></td><td>One search is not enough: plan, call tools, reflect</td><td>/lab/agentic/</td></tr></tbody></table></div>
+<div class="tip">Start with Advanced RAG for most real products. Add the others only when you can name the failure they fix.</div>
+
+<h2 id="run">3. Run it on your computer</h2>
+<div class="step"><span class="num">1</span><h3>Install Python 3.12 and create an environment</h3></div>
+<pre><code>cd rag_lab
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -r requirements.txt</code></pre>
+<div class="step"><span class="num">2</span><h3>Create your settings file</h3></div>
+<pre><code>cp .env.example .env
+export $(grep -v '^#' .env | xargs)   # loads the variables into your shell</code></pre>
+<div class="step"><span class="num">3</span><h3>Create the database, run the tests, start the server</h3></div>
+<pre><code>python manage.py migrate
+python manage.py test
+python manage.py runserver</code></pre>
+<p>Open <code>http://127.0.0.1:8000</code>. Pick a tab, click an example question, and read the numbered trace: every box is one stage of that architecture.</p>
+<div class="step"><span class="num">4</span><h3>Call it as an API</h3></div>
+<pre><code>curl -X POST http://127.0.0.1:8000/api/ask/ \
+  -H "X-API-Key: dev-api-key" -H "Content-Type: application/json" \
+  -d '{"question":"What is the refund policy?","pipeline":"advanced"}'</code></pre>
+<p>Or with Docker and Postgres: <code>docker compose up --build</code>.</p>
+
+<h2 id="tour">4. Project tour</h2>
+<pre><code>config/settings.py      Django settings, security headers, secrets from environment
+rag/kb.py               the demo documents, web snippets, knowledge graph
+rag/retrieval.py        BM25 search, access filter, re-ranker, answer extraction
+rag/pipelines.py        the six architectures
+rag/orchestrator.py     LangGraph: guard → pipeline → generate → guard
+rag/guardrails.py       input security checks, hallucination check, PII redaction
+rag/llm.py              optional real LLM (USE_LLM=1)
+rag/models.py           QueryLog + EvalRun tables for monitoring
+rag/eval_set.py         golden questions
+rag/management/commands/run_eval.py   quality gate for CI
+rag/views.py, urls.py, templates/     the screens and the API
+Dockerfile, docker-compose.yml, deploy/, .github/workflows/ci.yml   ship it</code></pre>
+
+<h2 id="graph">5. How LangGraph orchestrates a request</h2>
+<p>LangGraph runs your steps as a graph of small functions that share one state dictionary. Each function returns only the keys it changes. A <b>conditional edge</b> chooses the next step, which is how a blocked request skips retrieval.</p>
+<pre><code>START → input_guard ─┬─ blocked → refuse ───────────────────→ END
+                     └─ ok ────→ run_pipeline → generate → output_guard → END</code></pre>
+<p>Open <code>rag/orchestrator.py</code>: <code>build_graph()</code> is 12 lines. To add a step (say, a cache lookup), write a function <code>(state) → dict</code>, call <code>g.add_node</code>, and wire it with <code>add_edge</code>.</p>
+<div class="tip">Why a graph and not plain function calls? One place guarantees every pipeline, including future ones, passes both guardrails. Nobody can forget them.</div>
+
+<h2 id="safe">6. Guardrails: hallucination and security</h2>
+<div class="wrap"><table><thead><tr><th>Risk</th><th>Defence in this project</th><th>Where</th></tr></thead><tbody>
+<tr><td>Hallucination</td><td>Prompt says "answer only from sources"; output guard checks every sentence is supported; unsupported answers are replaced with a refusal</td><td><code>guardrails.check_output</code>, <code>llm.SYSTEM</code></td></tr>
+<tr><td>Prompt injection</td><td>Pattern blocklist on input; sources are treated as data, never instructions</td><td><code>guardrails.check_input</code></td></tr>
+<tr><td>Data leaks (PII)</td><td>Emails, cards, phones, SSNs redacted before logging and in answers</td><td><code>guardrails.py</code></td></tr>
+<tr><td>Seeing other people's data</td><td>Access level filter applied inside retrieval, so restricted chunks never reach the model</td><td><code>BM25Index.search(role=…)</code></td></tr>
+<tr><td>Abuse and cost</td><td>500-character limit, per-IP rate limit, bounded agent loop (6 tool calls)</td><td><code>settings</code>, <code>views.rate_limited</code>, <code>agentic</code></td></tr>
+<tr><td>Unauthorised API use</td><td>API key checked with constant-time compare</td><td><code>views.api_ask</code></td></tr>
+<tr><td>Web attacks</td><td>CSRF, HTTPS redirect, HSTS, secure cookies, no debug, host allow-list</td><td><code>config/settings.py</code></td></tr>
+<tr><td>Leaked secrets</td><td>Nothing in code; AWS Secrets Manager injects them at runtime</td><td><code>deploy/ecs-task-def.json</code></td></tr></tbody></table></div>
+<p>Try it: the <b>Guardrails</b> screen shows attacks being blocked, and on any lab screen asking "When does staff payroll run?" gives different results for <code>public</code> and <code>staff</code>.</p>
+<div class="warn">Regex rules are a first wall, not a complete defence. Before real users: add a classifier layer (Amazon Bedrock Guardrails or Llama Guard), and take the caller's role from the logged-in user. The demo reads it from the URL so you can see the effect.</div>
+
+<h2 id="mlops">7. MLOps: keep quality from drifting</h2>
+<div class="step"><span class="num">1</span><h3>Log everything useful</h3></div>
+<p>Every question writes a <code>QueryLog</code> row: pipeline, latency, groundedness, blocked or not. The <b>MLOps</b> screen charts it as a table. Logs go to stdout, which CloudWatch collects on AWS.</p>
+<div class="step"><span class="num">2</span><h3>Keep a golden question set</h3></div>
+<p><code>rag/eval_set.py</code> pairs questions with the document that must be retrieved. Add real user questions that went wrong.</p>
+<div class="step"><span class="num">3</span><h3>Make quality a build gate</h3></div>
+<pre><code>python manage.py run_eval --min-hit-rate 0.8</code></pre>
+<p>It prints hit-rate and groundedness per pipeline, saves an <code>EvalRun</code>, and exits with an error if quality drops. <code>.github/workflows/ci.yml</code> runs it before deploying.</p>
+<div class="step"><span class="num">4</span><h3>Watch it in production</h3></div>
+<p>Create CloudWatch alarms on: 5xx rate, p95 latency, and a drop in average groundedness or a rise in blocked requests. Roll back by redeploying the previous task definition.</p>
+
+<h2 id="aws">8. Deploy to AWS (ECS Fargate)</h2>
+<p>Costs money. Use a small account, delete resources when finished. Replace <code>REGION</code> and <code>ACCOUNT_ID</code>.</p>
+<div class="step"><span class="num">1</span><h3>Container registry</h3></div>
+<pre><code>aws ecr create-repository --repository-name rag-lab
+aws ecr get-login-password | docker login --username AWS --password-stdin ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com
+docker build -t ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/rag-lab:latest .
+docker push ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/rag-lab:latest</code></pre>
+<div class="step"><span class="num">2</span><h3>Database</h3></div>
+<p>Create an RDS PostgreSQL instance in private subnets (no public access). Allow port 5432 only from the app's security group.</p>
+<div class="step"><span class="num">3</span><h3>Secrets</h3></div>
+<pre><code>aws secretsmanager create-secret --name rag/django-secret --secret-string "$(python -c 'import secrets;print(secrets.token_urlsafe(50))')"
+aws secretsmanager create-secret --name rag/database-url --secret-string "postgres://USER:PASS@RDS_HOST:5432/ragdb"
+aws secretsmanager create-secret --name rag/api-key --secret-string "$(python -c 'import secrets;print(secrets.token_urlsafe(32))')"</code></pre>
+<p>Give the task execution role permission to read these three secrets.</p>
+<div class="step"><span class="num">4</span><h3>Cluster, task and service</h3></div>
+<p>Edit <code>deploy/ecs-task-def.json</code> (account, region, domain), then:</p>
+<pre><code>aws logs create-log-group --log-group-name /ecs/rag-lab
+aws ecs create-cluster --cluster-name rag-lab
+aws ecs register-task-definition --cli-input-json file://deploy/ecs-task-def.json
+aws ecs create-service --cluster rag-lab --service-name rag-lab-svc --task-definition rag-lab \
+  --desired-count 2 --launch-type FARGATE \
+  --network-configuration "awsvpcConfiguration={subnets=[SUBNET_A,SUBNET_B],securityGroups=[SG_ID]}" \
+  --load-balancers targetGroupArn=TG_ARN,containerName=web,containerPort=8000</code></pre>
+<div class="step"><span class="num">5</span><h3>Load balancer and HTTPS</h3></div>
+<p>Put an Application Load Balancer in public subnets with an ACM certificate on port 443. Health check path: <code>/healthz</code>. Keep the tasks in private subnets. Optionally attach AWS WAF with the managed rule groups for rate limiting and common attacks.</p>
+<div class="step"><span class="num">6</span><h3>Automatic deploys</h3></div>
+<p>In GitHub, create an IAM role that trusts GitHub's OIDC provider, then set secret <code>AWS_DEPLOY_ROLE_ARN</code> and variable <code>AWS_REGION</code>. Every push to <code>main</code> now tests, runs the quality gate, builds, pushes and deploys.</p>
+
+<h2 id="real">9. Swap the demo for real models</h2>
+<p>The demo needs no API keys. To go real, replace one stage at a time and keep the tests green:</p>
+<div class="wrap"><table><thead><tr><th>Demo stage</th><th>Production replacement</th></tr></thead><tbody>
+<tr><td>BM25 search</td><td>Embeddings stored in PostgreSQL with <code>pgvector</code> (same <code>search()</code> signature), combined with BM25 for hybrid search</td></tr>
+<tr><td>Heuristic re-ranker</td><td>A cross-encoder re-ranker model</td></tr>
+<tr><td>Image and audio captions</td><td>Image embeddings (CLIP/SigLIP) and speech-to-text (Whisper or Amazon Transcribe)</td></tr>
+<tr><td>Extracted sentences</td><td>An LLM: set <code>USE_LLM=1</code> and <code>ANTHROPIC_API_KEY</code>; the output guard still checks it</td></tr>
+<tr><td>Hard-coded graph</td><td>Entities and relations extracted from your documents, stored in Postgres or Neptune</td></tr>
+<tr><td>Rule-based router/planner</td><td>An LLM that returns a route or a plan as JSON</td></tr></tbody></table></div>
+<p>Load your own documents: split into 200 to 400 word chunks, keep the title and an <code>acl</code> label on each chunk, and replace the lists in <code>rag/kb.py</code> with a database table.</p>
+
+<h2 id="fix">10. Troubleshooting</h2>
+<div class="card"><b>"Set DJANGO_SECRET_KEY"</b> on start: export it, or set <code>DJANGO_DEBUG=1</code> locally.<br><b>Pages have no styling in Docker:</b> run <code>collectstatic</code> (the Dockerfile does) and keep WhiteNoise in <code>MIDDLEWARE</code>.<br><b>"Request blocked" on a normal question:</b> check the Guardrails screen to see which rule fired.<br><b>ECS task keeps restarting:</b> read the CloudWatch log group <code>/ecs/rag-lab</code>; the usual cause is a missing secret permission or wrong <code>DJANGO_ALLOWED_HOSTS</code>.<br><b>Answer says it cannot find something:</b> the retriever did not surface the chunk; look at the trace, then add a golden question and improve retrieval.</div>
+</div></body></html>
+{% endverbatim %}

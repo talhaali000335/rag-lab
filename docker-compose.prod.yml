@@ -1,0 +1,19 @@
+services:
+  web:
+    image: ${IMAGE}
+    env_file: .env.prod
+    restart: always
+    depends_on: [db]
+  db:
+    image: postgres:16
+    env_file: .env.prod
+    restart: always
+    volumes: [pgdata:/var/lib/postgresql/data]
+  caddy:
+    image: caddy:2
+    restart: always
+    ports: ["80:80", "443:443"]
+    command: caddy reverse-proxy --from :80 --to web:8000
+    depends_on: [web]
+volumes:
+  pgdata:

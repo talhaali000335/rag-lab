@@ -1,0 +1,19 @@
+{% extends "rag/base.html" %}
+{% block title %}{{ cfg.name }} · RAG Lab{% endblock %}
+{% block content %}
+<div class="card"><h2>{{ cfg.name }}</h2><p class="mut" style="margin:0 0 6px">{{ cfg.desc }}</p>
+<ul class="flow">{% for f in cfg.flow %}<li>{{ f }}</li>{% endfor %}</ul>
+<form class="q" method="get" action="{% url 'lab' slug %}">
+<input type="text" name="q" value="{{ q }}" maxlength="500" aria-label="Your question" placeholder="Ask a question about the clinic">
+<select name="role" aria-label="Caller role"><option value="public" {% if role == 'public' %}selected{% endif %}>public</option><option value="staff" {% if role == 'staff' %}selected{% endif %}>staff</option></select>
+<button class="go" type="submit">Run pipeline</button></form>
+<div class="ex">{% for e in cfg.examples %}<a href="{% url 'lab' slug %}?q={{ e|urlencode }}&role={{ role }}">{{ e }}</a>{% endfor %}</div>
+<p class="mut note" style="margin-top:10px">Try “What is the payroll date?” as public vs staff to see access control at retrieval time.</p></div>
+{% if error %}<p class="err">{{ error }}</p>{% endif %}
+{% if result %}
+<ol class="trace">{% for s in result.steps %}<li class="step"><span class="num">{{ forloop.counter }}</span><div class="sb"><b>{{ s.title }}</b>
+{% for i in s.items %}<div class="it"><span style="flex:1">{{ i.text }}</span>{% if i.badge %}<span class="bd {{ i.tone }}">{{ i.badge }}</span>{% endif %}</div>{% endfor %}
+{% if s.note %}<div class="mut" style="font-size:13px;margin-top:6px">{{ s.note }}</div>{% endif %}</div></li>{% endfor %}</ol>
+<div class="card ans {% if result.blocked %}blocked{% endif %}"><b>{% if result.blocked %}Blocked{% else %}Answer{% endif %}</b><p>{{ result.answer }}</p>
+<div class="mut" style="font-size:13px;margin-top:8px">{{ result.latency_ms }} ms · groundedness {{ result.groundedness|floatformat:2 }}{% if result.sources %} · sources: {% for d in result.sources %}{{ d.id }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}</div></div>
+{% endif %}{% endblock %}

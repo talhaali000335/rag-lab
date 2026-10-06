@@ -1,0 +1,7 @@
+Django>=5.0,<6.0
+langgraph>=0.2
+gunicorn>=22.0
+whitenoise>=6.6
+psycopg[binary]>=3.1
+dj-database-url>=2.1
+anthropic>=0.40   # optional: only used when USE_LLM=1

@@ -1,0 +1,7 @@
+.env
+.env.prod
+*.pem
+db.sqlite3
+__pycache__/
+staticfiles/
+.venv/

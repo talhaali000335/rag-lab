@@ -1,0 +1,25 @@
+{
+  "family": "rag-lab",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/ragLabTaskRole",
+  "containerDefinitions": [{
+    "name": "web",
+    "image": "<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/rag-lab:latest",
+    "essential": true,
+    "portMappings": [{"containerPort": 8000}],
+    "environment": [
+      {"name": "DJANGO_ALLOWED_HOSTS", "value": "rag.example.com"},
+      {"name": "CSRF_TRUSTED_ORIGINS", "value": "https://rag.example.com"}
+    ],
+    "secrets": [
+      {"name": "DJANGO_SECRET_KEY", "valueFrom": "arn:aws:secretsmanager:<REGION>:<ACCOUNT_ID>:secret:rag/django-secret"},
+      {"name": "DATABASE_URL", "valueFrom": "arn:aws:secretsmanager:<REGION>:<ACCOUNT_ID>:secret:rag/database-url"},
+      {"name": "RAG_API_KEY", "valueFrom": "arn:aws:secretsmanager:<REGION>:<ACCOUNT_ID>:secret:rag/api-key"}
+    ],
+    "logConfiguration": {"logDriver": "awslogs", "options": {"awslogs-group": "/ecs/rag-lab", "awslogs-region": "<REGION>", "awslogs-stream-prefix": "web"}}
+  }]
+}

@@ -1,0 +1,9 @@
+{% extends "rag/base.html" %}
+{% block title %}Guardrails · RAG Lab{% endblock %}
+{% block content %}
+<div class="card"><h2>Input guardrail</h2><p class="mut" style="margin:0">Each line below goes through the same check that runs before every pipeline. The output guardrail (hallucination check) is shown in every trace.</p>
+<form class="q" method="get"><input type="text" name="t" value="{{ t }}" maxlength="500" aria-label="Your own test" placeholder="Type your own attack or PII example"><button class="go" type="submit">Test</button></form>
+<div class="wrap"><table><thead><tr><th>Input</th><th>Verdict</th><th>What happened</th></tr></thead><tbody>
+{% for r in rows %}<tr><td>{{ r.text }}</td><td><span class="bd {% if r.ok %}ok{% else %}bad{% endif %}">{% if r.ok %}allowed{% else %}blocked{% endif %}</span></td>
+<td>{% if r.reason %}{{ r.reason }}{% elif r.findings %}Redacted → <em>{{ r.clean }}</em>{% else %}Clean{% endif %}</td></tr>{% endfor %}
+</tbody></table></div></div>{% endblock %}

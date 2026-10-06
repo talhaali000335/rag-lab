@@ -1,0 +1,9 @@
+{% extends "rag/base.html" %}
+{% block content %}
+<div class="grid">
+{% for p in pipelines %}<a class="card" href="{% url 'lab' p.slug %}"><h2>{{ p.name }}</h2><p class="mut" style="margin:0">{{ p.desc }}</p>
+<ul class="flow">{% for f in p.flow %}<li>{{ f }}</li>{% endfor %}</ul></a>{% endfor %}
+<a class="card" href="{% url 'guardrails' %}"><h2>Guardrails</h2><p class="mut" style="margin:0">Try prompt injection, PII and off-topic requests against the input filter.</p></a>
+<a class="card" href="{% url 'mlops' %}"><h2>MLOps</h2><p class="mut" style="margin:0">Query logs, latency, groundedness and evaluation runs.</p></a>
+<a class="card" href="{% url 'guide' %}"><h2>Beginner guide</h2><p class="mut" style="margin:0">Step-by-step: Django, LangGraph, guardrails, MLOps and AWS.</p></a>
+</div>{% endblock %}

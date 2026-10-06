@@ -1,0 +1,11 @@
+{% extends "rag/base.html" %}
+{% block title %}MLOps · RAG Lab{% endblock %}
+{% block content %}
+<div class="card"><h2>Live metrics</h2><div class="wrap"><table><thead><tr><th>Pipeline</th><th>Queries</th><th>Avg latency</th><th>Avg groundedness</th><th>Blocked</th></tr></thead><tbody>
+{% for s in stats %}<tr><td>{{ s.pipeline }}</td><td>{{ s.n }}</td><td>{{ s.latency|floatformat:0 }} ms</td><td>{{ s.grounded|floatformat:2 }}</td><td>{{ s.blocked }}</td></tr>{% empty %}<tr><td colspan="5" class="mut">No queries yet. Run a pipeline first.</td></tr>{% endfor %}</tbody></table></div></div>
+<div class="card" style="margin-top:12px"><h2>Evaluation runs</h2><p class="mut" style="margin:0 0 6px">Create one with <code>python manage.py run_eval</code>. CI runs it on every push and fails the build if quality drops.</p>
+<div class="wrap"><table><thead><tr><th>When</th><th>Pipeline</th><th>Hit-rate</th><th>Groundedness</th><th>Build</th></tr></thead><tbody>
+{% for e in evals %}<tr><td>{{ e.created|date:"Y-m-d H:i" }}</td><td>{{ e.pipeline }}</td><td>{{ e.hit_rate|floatformat:2 }}</td><td>{{ e.avg_groundedness|floatformat:2 }}</td><td>{{ e.git_sha|slice:":7" }}</td></tr>{% empty %}<tr><td colspan="5" class="mut">No evaluation runs yet.</td></tr>{% endfor %}</tbody></table></div></div>
+<div class="card" style="margin-top:12px"><h2>Recent queries</h2><div class="wrap"><table><thead><tr><th>Pipeline</th><th>Question</th><th>Result</th><th>ms</th></tr></thead><tbody>
+{% for l in logs %}<tr><td>{{ l.pipeline }}</td><td>{{ l.question }}</td><td><span class="bd {% if l.blocked %}bad{% else %}ok{% endif %}">{% if l.blocked %}blocked{% else %}{{ l.groundedness|floatformat:2 }}{% endif %}</span></td><td>{{ l.latency_ms }}</td></tr>{% empty %}<tr><td colspan="4" class="mut">Nothing logged yet.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

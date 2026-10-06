@@ -1,0 +1,14 @@
+{% load static %}<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% block title %}RAG Lab{% endblock %}</title><link rel="stylesheet" href="{% static 'rag/app.css' %}"></head>
+<body><div class="app">
+<h1>RAG Lab</h1><p class="mut sub">{% block sub %}Six RAG architectures behind one guarded LangGraph pipeline.{% endblock %}</p>
+<nav class="tabs" aria-label="Screens">
+<a class="tab" href="{% url 'index' %}" {% if request.path == '/' %}aria-current="page"{% endif %}>Home</a>
+{% for p in pipelines %}<a class="tab" href="{% url 'lab' p.slug %}" {% if slug == p.slug %}aria-current="page"{% endif %}>{{ p.name }}</a>{% endfor %}
+<a class="tab" href="{% url 'guardrails' %}" {% if request.path == '/guardrails/' %}aria-current="page"{% endif %}>Guardrails</a>
+<a class="tab" href="{% url 'mlops' %}" {% if request.path == '/mlops/' %}aria-current="page"{% endif %}>MLOps</a>
+<a class="tab" href="{% url 'guide' %}">Beginner guide</a></nav>
+<main>{% block content %}{% endblock %}</main>
+<p class="mut note">Demo mode: BM25 keyword retrieval replaces embeddings, images/audio are stored as captions/transcripts, and answers are extracted from sources. The pipeline shapes, guardrails and orchestration are real; see the guide to swap in real models.</p>
+</div></body></html>
