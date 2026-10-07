@@ -29,3 +29,26 @@ class EvalRun(models.Model):
 
     class Meta:
         ordering = ["-created"]
+
+
+class Upload(models.Model):
+    """One file the user uploaded (PDF, text, image, audio). Its extracted text is stored as Chunk rows."""
+    created = models.DateTimeField(auto_now_add=True, db_index=True)
+    filename = models.CharField(max_length=255)
+    kind = models.CharField(max_length=10)          # text | image | audio
+    acl = models.CharField(max_length=10, default="public")  # public | staff
+    note = models.CharField(max_length=300, blank=True)      # e.g. "scanned PDF: 5 pages read with vision OCR"
+
+    class Meta:
+        ordering = ["-created"]
+
+
+class Chunk(models.Model):
+    """A searchable piece of an uploaded file (about 700 characters). Retrieval reads these like built-in documents."""
+    upload = models.ForeignKey(Upload, on_delete=models.CASCADE, related_name="chunks")
+    idx = models.IntegerField(default=0)
+    title = models.CharField(max_length=300)
+    text = models.TextField()
+
+    class Meta:
+        ordering = ["upload_id", "idx"]

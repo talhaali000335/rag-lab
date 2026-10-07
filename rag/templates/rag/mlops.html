@@ -1,5 +1,7 @@
 {% extends "rag/base.html" %}
 {% block title %}MLOps · RAG Lab{% endblock %}
+{% block heading %}MLOps{% endblock %}
+{% block sub %}Live quality and speed numbers, evaluation runs and recent questions.{% endblock %}
 {% block content %}
 <div class="card"><h2>Live metrics</h2><div class="wrap"><table><thead><tr><th>Pipeline</th><th>Queries</th><th>Avg latency</th><th>Avg groundedness</th><th>Blocked</th></tr></thead><tbody>
 {% for s in stats %}<tr><td>{{ s.pipeline }}</td><td>{{ s.n }}</td><td>{{ s.latency|floatformat:0 }} ms</td><td>{{ s.grounded|floatformat:2 }}</td><td>{{ s.blocked }}</td></tr>{% empty %}<tr><td colspan="5" class="mut">No queries yet. Run a pipeline first.</td></tr>{% endfor %}</tbody></table></div></div>

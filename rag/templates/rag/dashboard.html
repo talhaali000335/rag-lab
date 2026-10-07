@@ -1,0 +1,96 @@
+{% extends "rag/base.html" %}
+{% block title %}Dashboard · RAG Lab{% endblock %}
+{% block heading %}Dashboard{% endblock %}
+{% block sub %}Choose a RAG method, choose which data to search, then ask. You will see every step the system took.{% endblock %}
+{% block content %}
+<style>{% for m in methods %}#runform:has(input[name=rag][value="{{ m.slug }}"]:checked) .exset[data-for="{{ m.slug }}"],{% endfor %}#runform:has(input[name=rag][value="all"]:checked) .exset[data-for="advanced"]{display:flex}
+@supports not selector(:has(*)){.exset[data-for="{% if rag == 'all' %}advanced{% else %}{{ rag }}{% endif %}"]{display:flex}}</style>
+
+<section class="kpis" aria-label="Overview">
+<div class="kpi"><span>Searchable chunks</span><b>{{ kpis.docs }}</b><small>{{ kpis.files }} uploaded file{{ kpis.files|pluralize }}</small></div>
+<div class="kpi"><span>Questions asked</span><b>{{ kpis.queries }}</b><small>all methods</small></div>
+<div class="kpi"><span>Avg. groundedness</span><b>{{ kpis.grounded }}%</b><small>answers backed by sources</small></div>
+<div class="kpi"><span>Avg. response time</span><b>{{ kpis.latency }} ms</b><small>per question</small></div>
+</section>
+
+<form id="runform" method="get" action="{% url 'index' %}">
+
+<section class="panel">
+<div class="ph"><span class="step-n">1</span><div><h2>Choose a RAG method</h2><p class="mut">Each method finds and checks information in a different way. Pick one, or compare all six on the same question.</p></div></div>
+<div class="opts">
+{% for m in methods %}<label class="opt"><input type="radio" name="rag" value="{{ m.slug }}" {% if rag == m.slug %}checked{% endif %}>
+<span class="ob"><span class="tick" aria-hidden="true">✓</span><span class="oname">{{ m.name }}</span><span class="oshort">{{ m.short }}</span>
+<span class="odesc">{{ m.desc }}</span>
+<ul class="flow">{% for f in m.flow %}<li>{{ f }}</li>{% endfor %}</ul>
+<span class="obest"><b>Best for:</b> {{ m.best }}</span><span class="speed">{{ m.speed }}</span></span></label>{% endfor %}
+<label class="opt wide"><input type="radio" name="rag" value="all" {% if rag == 'all' %}checked{% endif %}>
+<span class="ob"><span class="tick" aria-hidden="true">✓</span><span class="oname">Compare all six methods</span><span class="oshort">Same question, side by side</span>
+<span class="odesc">Runs every method on your question and shows answer, groundedness, speed and sources in one table.</span></span></label>
+</div>
+</section>
+
+<section class="panel">
+<div class="ph"><span class="step-n">2</span><div><h2>Choose your data</h2><p class="mut">Where should the answer come from, and who is asking?</p></div></div>
+<div class="two">
+<div><h3>Search in</h3><div class="seg">
+{% for s in scopes %}<label class="opt {% if s.off %}off{% endif %}"><input type="radio" name="scope" value="{{ s.key }}" {% if scope == s.key %}checked{% endif %} {% if s.off %}disabled{% endif %}><span class="ob"><span class="oname">{{ s.label }}</span><span class="oshort">{{ s.detail }}</span></span></label>{% endfor %}
+</div><p class="mut hint"><a href="{% url 'upload' %}">Upload PDFs, images or audio</a> to add your own data.</p></div>
+<div><h3>Access level</h3><div class="seg">
+<label class="opt"><input type="radio" name="role" value="public" {% if role == 'public' %}checked{% endif %}><span class="ob"><span class="oname">Public</span><span class="oshort">Public documents only</span></span></label>
+<label class="opt {% if not is_admin %}off{% endif %}"><input type="radio" name="role" value="staff" {% if role == 'staff' %}checked{% endif %} {% if not is_admin %}disabled{% endif %}><span class="ob"><span class="oname">Staff</span><span class="oshort">Also staff-only documents</span></span></label>
+</div><p class="mut hint">{% if is_admin %}You are signed in, so the staff level is available.{% else %}Staff level needs <a href="{% url 'upload' %}">sign-in</a>.{% endif %}</p></div>
+</div>
+</section>
+
+<section class="panel">
+<div class="ph"><span class="step-n">3</span><div><h2>Ask a question</h2><p class="mut">The question passes the input guardrail first, then the chosen method runs.</p></div></div>
+<div class="ask"><input type="text" name="q" value="{{ q }}" maxlength="500" aria-label="Your question" placeholder="Type your question about the selected data" autocomplete="off">
+<button class="go" type="submit">Run</button></div>
+<div class="exwrap"><span class="mut exlabel">Try an example (demo clinic data):</span>
+{% for m in methods %}<div class="ex exset" data-for="{{ m.slug }}">{% for e in m.examples %}<a href="?rag={{ m.slug }}&scope={{ scope }}&role={{ role }}&q={{ e|urlencode }}" data-q="{{ e }}">{{ e }}</a>{% endfor %}</div>{% endfor %}</div>
+</section>
+</form>
+<script>
+document.querySelectorAll('.exset a').forEach(function(a){a.addEventListener('click',function(ev){ev.preventDefault();var f=document.getElementById('runform');f.elements['q'].value=a.dataset.q;f.submit();});});
+</script>
+
+{% if staff_denied %}<p class="alert warn">The staff level needs sign-in, so this ran as public. <a href="{% url 'upload' %}">Sign in</a></p>{% endif %}
+{% if uploads_empty %}<p class="alert warn">You chose “My uploaded files”, but nothing is uploaded yet. <a href="{% url 'upload' %}">Upload a file</a></p>{% endif %}
+{% if error %}<p class="alert bad">{{ error }}</p>{% endif %}
+
+{% if result %}
+<section class="panel result" aria-live="polite">
+<div class="rhead"><h2>Result</h2><span class="chip">{{ result.name }}</span><span class="chip">{{ scope }} data</span><span class="chip">{{ role }}</span></div>
+<div class="answer {% if result.blocked %}blocked{% elif not result.found %}nf{% endif %}">
+<span class="status">{% if result.blocked %}Blocked by guardrail{% elif result.found %}Answer{% else %}Not found in the data{% endif %}</span>
+<p>{{ result.answer }}</p></div>
+<div class="metrics">
+<div class="metric"><span>Groundedness</span><b>{{ result.pct }}%</b><div class="bar"><i style="width:{{ result.pct }}%"></i></div></div>
+<div class="metric"><span>Response time</span><b>{{ result.latency }} ms</b></div>
+<div class="metric"><span>Sources used</span><b>{{ result.sources|length }}</b></div>
+</div>
+{% if result.sources %}<h3>Sources</h3><div class="srcs">{% for d in result.sources %}<div class="src"><div class="srch"><b>{{ d.title }}</b><span class="bd">{{ d.modality }}</span>{% if d.acl == 'staff' %}<span class="bd warn">staff</span>{% endif %}<span class="mut sid">{{ d.id }}</span></div><p>{{ d.text|truncatechars:240 }}</p></div>{% endfor %}</div>{% endif %}
+<details open class="how"><summary>How it worked, step by step</summary>{% include "rag/_trace.html" with steps=result.steps %}</details>
+</section>
+
+{% elif compare %}
+<section class="panel result" aria-live="polite">
+<div class="rhead"><h2>All six methods compared</h2><span class="chip">{{ scope }} data</span><span class="chip">{{ role }}</span></div>
+<div class="wrap"><table class="cmp"><thead><tr><th>Method</th><th>Answer</th><th>Grounded</th><th>Time</th><th>Sources</th></tr></thead><tbody>
+{% for r in compare %}<tr><td><b>{{ r.name }}</b></td>
+<td>{% if r.blocked %}<span class="bd bad">blocked</span> {% elif not r.found %}<span class="bd warn">not found</span> {% endif %}{{ r.answer|truncatechars:200 }}</td>
+<td><div class="bar sm"><i style="width:{{ r.pct }}%"></i></div>{{ r.pct }}%</td><td>{{ r.latency }} ms</td><td>{{ r.sources|length }}</td></tr>{% endfor %}
+</tbody></table></div>
+{% for r in compare %}<details class="how"><summary>{{ r.name }}: steps</summary>{% include "rag/_trace.html" with steps=r.steps %}</details>{% endfor %}
+</section>
+
+{% elif not error %}
+<section class="panel empty"><h2>What happens when you press Run</h2>
+<div class="stages">
+<div><span class="step-n">1</span><b>Input guardrail</b><p class="mut">Removes personal data and blocks prompt-injection or harmful requests.</p></div>
+<div><span class="step-n">2</span><b>Retrieve</b><p class="mut">{% if selected %}{{ selected.name }}: {{ selected.desc }}{% else %}Each method searches in its own way.{% endif %}</p></div>
+<div><span class="step-n">3</span><b>Generate</b><p class="mut">The answer is built only from the retrieved sources.</p></div>
+<div><span class="step-n">4</span><b>Verify</b><p class="mut">Every sentence must be supported by the sources, or the answer is rejected.</p></div>
+</div></section>
+{% endif %}
+{% endblock %}

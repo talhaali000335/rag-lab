@@ -6,6 +6,8 @@ implement the same `search()` signature on top of pgvector (see guide, step 10).
 import math
 import re
 from collections import Counter
+from contextlib import contextmanager
+from contextvars import ContextVar
 
 from .kb import KB, QUERY_EXPANSIONS, WEB, Doc
 
@@ -52,7 +54,63 @@ class BM25Index:
         return sorted(out, key=lambda x: -x[1])[:k]
 
 
-KB_INDEX = BM25Index(KB)
+SCOPE = ContextVar("rag_scope", default="all")   # which data a search may use: all | demo | uploads
+
+
+@contextmanager
+def use_scope(scope):
+    """Limit every KB search inside the `with` block to the demo documents, the uploaded files, or both."""
+    token = SCOPE.set(scope if scope in ("all", "demo", "uploads") else "all")
+    try:
+        yield
+    finally:
+        SCOPE.reset(token)
+
+
+class DynamicIndex:
+    """Drop-in for the old static KB_INDEX: demo documents plus uploaded files, rebuilt when uploads change."""
+
+    def __init__(self, static_docs):
+        self.static = list(static_docs)
+        self._version = None
+        self._indexes = {}
+
+    def _current_version(self):
+        from django.db import DatabaseError
+        from django.db.models import Count, Max
+        from .models import Chunk
+        try:
+            agg = Chunk.objects.aggregate(n=Count("id"), m=Max("id"))
+            return (agg["n"], agg["m"])
+        except DatabaseError:  # tables not created yet (before migrate): demo documents only
+            return (0, None)
+
+    def _upload_docs(self):
+        from django.db import DatabaseError
+        from .models import Chunk
+        try:
+            return [Doc(f"u{c.id}", c.title, c.text, modality=c.upload.kind, acl=c.upload.acl, source="upload")
+                    for c in Chunk.objects.select_related("upload").iterator()]
+        except DatabaseError:
+            return []
+
+    def _get(self):
+        from django.conf import settings
+        version = (self._current_version(), settings.USE_DEMO_KB)
+        if version != self._version:
+            self._version, self._indexes = version, {}
+        scope = SCOPE.get()
+        if scope not in self._indexes:
+            demo = list(self.static) if settings.USE_DEMO_KB and scope in ("all", "demo") else []
+            uploads = self._upload_docs() if scope in ("all", "uploads") else []
+            self._indexes[scope] = BM25Index(demo + uploads)
+        return self._indexes[scope]
+
+    def search(self, *args, **kwargs):
+        return self._get().search(*args, **kwargs)
+
+
+KB_INDEX = DynamicIndex(KB)
 WEB_INDEX = BM25Index(WEB)
 
 

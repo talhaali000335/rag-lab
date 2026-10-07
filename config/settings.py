@@ -69,6 +69,9 @@ RATE_LIMIT_PER_MIN = int(os.environ.get("RATE_LIMIT_PER_MIN", "30"))
 USE_LLM = os.environ.get("USE_LLM", "0") == "1"
 LLM_MODEL = os.environ.get("LLM_MODEL", "openai/gpt-oss-120b")
 MAX_QUESTION_CHARS = 500
+USE_DEMO_KB = os.environ.get("USE_DEMO_KB", "1") == "1"      # 0 = answer only from uploaded files
+VISION_MODEL = os.environ.get("VISION_MODEL", "qwen/qwen3.8-27b")           # images and scanned PDFs (Groq)
+WHISPER_MODEL = os.environ.get("WHISPER_MODEL", "whisper-large-v3-turbo")   # audio (Groq)
 
 LOGGING = {
     "version": 1, "disable_existing_loggers": False,

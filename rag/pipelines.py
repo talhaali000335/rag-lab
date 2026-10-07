@@ -76,7 +76,7 @@ def adaptive(q, role):
                   "none → answer directly · simple → single retrieval · multi → decompose + retrieve per part")]
     if route == "none":
         steps.append(step("Skip retrieval", [item("No knowledge needed — saved latency and cost")]))
-        return {"answer": "Hello! Ask me about the clinic: policies, hours, prices or doctors.", "steps": steps, "sources": []}
+        return {"answer": "Hello! Ask me a question about the documents in the knowledge base.", "steps": steps, "sources": []}
     if route == "simple":
         hits = KB_INDEX.search(q, role=role, k=3)
         steps.append(step("Single retrieval", [doc_item(d, s) for d, s in hits]))

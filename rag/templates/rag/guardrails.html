@@ -1,5 +1,7 @@
 {% extends "rag/base.html" %}
 {% block title %}Guardrails · RAG Lab{% endblock %}
+{% block heading %}Guardrails{% endblock %}
+{% block sub %}Test the input filter with prompt injection, personal data and harmful requests.{% endblock %}
 {% block content %}
 <div class="card"><h2>Input guardrail</h2><p class="mut" style="margin:0">Each line below goes through the same check that runs before every pipeline. The output guardrail (hallucination check) is shown in every trace.</p>
 <form class="q" method="get"><input type="text" name="t" value="{{ t }}" maxlength="500" aria-label="Your own test" placeholder="Type your own attack or PII example"><button class="go" type="submit">Test</button></form>
