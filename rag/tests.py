@@ -268,3 +268,46 @@ class DashboardTests(TestCase):
 def ask_in_scope(question, slug, scope):
     with retrieval.use_scope(scope):
         return ask(question, slug, save=False)
+
+
+class ImagePrepTests(TestCase):
+    def _png(self, im, **kw):
+        from PIL import Image  # noqa: F401
+        buf = io.BytesIO()
+        im.save(buf, "PNG", **kw)
+        return buf.getvalue()
+
+    def _decode(self, data):
+        from PIL import Image
+        return Image.open(io.BytesIO(data)).convert("RGB")
+
+    def test_transparent_png_becomes_white_not_black(self):
+        from PIL import Image
+        out, mime = ingest._prepare_image(self._png(Image.new("RGBA", (40, 40), (0, 0, 0, 0))))
+        self.assertEqual(mime, "image/jpeg")
+        r, g, b = self._decode(out).getpixel((20, 20))
+        self.assertGreater(min(r, g, b), 240)
+
+    def test_unusual_png_modes_are_accepted(self):
+        from PIL import Image
+        for im in (Image.new("I;16", (30, 30), 40000), Image.new("LA", (30, 30), (10, 255)), Image.new("P", (30, 30), 0), Image.new("CMYK", (30, 30))):
+            buf = io.BytesIO()
+            im.save(buf, "TIFF" if im.mode == "CMYK" else "PNG")
+            out, _ = ingest._prepare_image(buf.getvalue())
+            self.assertTrue(out)
+
+    def test_truncated_png_is_tolerated_and_garbage_is_explained(self):
+        from PIL import Image
+        data = self._png(Image.new("RGB", (300, 300), "white"))
+        self.assertTrue(ingest._prepare_image(data[:len(data) * 2 // 3])[0])
+        with self.assertRaises(ingest.IngestError) as ctx:
+            ingest._prepare_image(b"not an image at all")
+        self.assertIn("Could not read this image", str(ctx.exception))
+        self.assertIn("UnidentifiedImageError", str(ctx.exception))
+
+    def test_huge_image_is_refused_with_a_clear_message(self):
+        from PIL import Image
+        with mock.patch.object(ingest, "MAX_IMAGE_PIXELS", 100):
+            with self.assertRaises(ingest.IngestError) as ctx:
+                ingest._prepare_image(self._png(Image.new("RGB", (50, 50), "white")))
+        self.assertIn("very large", str(ctx.exception))

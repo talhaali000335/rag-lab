@@ -221,14 +221,43 @@ def _pdf(data):
     return pages, "; ".join(notes)
 
 
+MAX_IMAGE_PIXELS = 40_000_000   # about 8000 x 5000; bigger images can exhaust a small server's memory
+
+
+def _flatten(im):
+    """Return an 8-bit RGB copy: transparency is placed on white (black-on-transparent diagrams stay readable)."""
+    from PIL import Image
+    if im.mode in ("I", "I;16", "I;16L", "I;16B", "F"):
+        im = im.convert("I").point(lambda v: v * (1 / 256)).convert("L")
+    if im.mode in ("RGBA", "LA", "PA") or (im.mode == "P" and "transparency" in im.info):
+        im = im.convert("RGBA")
+        bg = Image.new("RGB", im.size, (255, 255, 255))
+        bg.paste(im, mask=im.getchannel("A"))
+        return bg
+    return im.convert("RGB")
+
+
 def _prepare_image(data, mime="image/jpeg"):
     """Shrink big photos so the request stays small (Groq limits base64 image requests to 4 MB)."""
     try:
-        from PIL import Image
-        Image.MAX_IMAGE_PIXELS = 50_000_000
+        from PIL import Image, ImageFile
+    except ImportError:
+        if len(data) > int(2.8 * MB):
+            raise IngestError("Image is over 2.8 MB and image resizing is not installed.")
+        return data, mime
+    ImageFile.LOAD_TRUNCATED_IMAGES = True     # accept slightly damaged files
+    Image.MAX_IMAGE_PIXELS = 400_000_000       # we do our own, stricter check below
+    try:
         im = Image.open(io.BytesIO(data))
+        width, height = im.size
+        if width * height > MAX_IMAGE_PIXELS:
+            raise IngestError(f"This image is very large ({width}x{height}). Shrink it to under 40 megapixels and upload again.")
+        try:
+            im.draft("RGB", (1600, 1600))      # JPEG: decode at reduced size
+        except Exception:
+            pass
+        im = _flatten(im)
         im.thumbnail((1600, 1600))
-        im = im.convert("RGB")
         for quality in (85, 65, 45):
             buf = io.BytesIO()
             im.save(buf, "JPEG", quality=quality)
@@ -237,12 +266,11 @@ def _prepare_image(data, mime="image/jpeg"):
         raise IngestError("This image is too large even after shrinking.")
     except IngestError:
         raise
-    except ImportError:
-        if len(data) > int(2.8 * MB):
-            raise IngestError("Image is over 2.8 MB and image resizing is not installed.")
-        return data, mime
-    except Exception:
-        raise IngestError("Could not read this image.")
+    except MemoryError:
+        raise IngestError("The server ran out of memory reading this image. Shrink it and try again.")
+    except Exception as exc:
+        log.exception("could not read image")
+        raise IngestError(f"Could not read this image ({type(exc).__name__}: {str(exc)[:100]}).")
 
 
 def extract(name, kind, data, description=""):
